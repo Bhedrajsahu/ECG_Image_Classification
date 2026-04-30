@@ -2,24 +2,32 @@ import streamlit as st
 import tensorflow as tf
 import numpy as np
 from PIL import Image
-import requests
+import gdown
+import os
 
+# =========================
+# 🔹 MODEL CONFIG
+# =========================
 MODEL_URL = "https://drive.google.com/uc?id=1Bp7dfpa6qG6HZPuB96hGG60ZMAxO0R7K"
 MODEL_PATH = "ecg_model.keras"
 
-# Download model (only once)
+# =========================
+# 🔹 LOAD MODEL (CACHED)
+# =========================
 @st.cache_resource
 def load_model():
-    import os
     if not os.path.exists(MODEL_PATH):
-        with open(MODEL_PATH, "wb") as f:
-            response = requests.get(MODEL_URL)
-            f.write(response.content)
+        st.write("Downloading model... please wait ⏳")
+        gdown.download(MODEL_URL, MODEL_PATH, quiet=False)
 
-    return tf.keras.models.load_model(MODEL_PATH)
+    model = tf.keras.models.load_model(MODEL_PATH)
+    return model
 
 model = load_model()
 
+# =========================
+# 🔹 CLASS LABELS
+# =========================
 class_names = [
     "Abnormal Heartbeat",
     "COVID-19",
@@ -28,21 +36,30 @@ class_names = [
     "Normal"
 ]
 
-st.title("ECG Classification")
+# =========================
+# 🔹 UI
+# =========================
+st.title("ECG Image Classification")
 
-file = st.file_uploader("Upload ECG Image", type=["jpg","png","jpeg"])
+uploaded_file = st.file_uploader("Upload ECG Image", type=["jpg", "png", "jpeg"])
 
-if file is not None:
-    img = Image.open(file)
+if uploaded_file is not None:
+    img = Image.open(uploaded_file)
     st.image(img, caption="Uploaded ECG", use_column_width=True)
 
-    img = img.resize((128,128))
+    # =========================
+    # 🔹 PREPROCESSING
+    # =========================
+    img = img.resize((128, 128))
     img_array = np.array(img) / 255.0
-    img_array = img_array.reshape(1,128,128,3)
+    img_array = img_array.reshape(1, 128, 128, 3)
 
-    pred = model.predict(img_array)
-    cls = np.argmax(pred)
-    conf = np.max(pred)
+    # =========================
+    # 🔹 PREDICTION
+    # =========================
+    prediction = model.predict(img_array)
+    predicted_class = np.argmax(prediction)
+    confidence = np.max(prediction)
 
-    st.success(f"Prediction: {class_names[cls]}")
-    st.write(f"Confidence: {conf:.2f}")
+    st.success(f"Prediction: {class_names[predicted_class]}")
+    st.write(f"Confidence: {confidence:.2f}")
