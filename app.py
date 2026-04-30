@@ -8,8 +8,8 @@ import os
 # =========================
 # MODEL CONFIG
 # =========================
-MODEL_URL = "https://drive.google.com/uc?id=1tJIupLqKCOLLhAE2r7mRgilmmGNlkFO9"
-MODEL_PATH = "ecg_model.h5"
+MODEL_URL = "https://drive.google.com/uc?id=1JZRrE8lWfehOpM11uAuoJ_Z9uhtXv0a0"
+MODEL_PATH = "ecg_model_fixed.h5"
 
 # =========================
 # LOAD MODEL
@@ -55,7 +55,7 @@ if file is not None:
     img = Image.open(file)
     st.image(img, caption="Uploaded ECG")
 
-    # Preprocessing (same as training)
+    # Preprocessing
     img = img.resize((128,128))
     img_array = np.array(img) / 255.0
     img_array = img_array.reshape(1,128,128,3)
