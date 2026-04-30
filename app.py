@@ -8,8 +8,8 @@ import os
 # =========================
 # MODEL CONFIG
 # =========================
-MODEL_URL = "https://drive.google.com/uc?id=1JZRrE8lWfehOpM11uAuoJ_Z9uhtXv0a0"
-MODEL_PATH = "ecg_model_fixed.h5"
+MODEL_URL = "https://drive.google.com/uc?id=1_B1o8zPaOBrpr8vrRc591xv7KgT33IV4"
+MODEL_PATH = "ecg_model_final_fixed.h5"
 
 # =========================
 # LOAD MODEL
@@ -20,12 +20,11 @@ def load_model():
         st.write("⬇️ Downloading model...")
         gdown.download(MODEL_URL, MODEL_PATH, quiet=False)
 
-    # Debug check
     size = os.path.getsize(MODEL_PATH)
     st.write(f"Model size: {size/1024/1024:.2f} MB")
 
     if size < 5 * 1024 * 1024:
-        st.error("❌ Model download failed or corrupted")
+        st.error("❌ Model download failed")
         st.stop()
 
     st.write("✅ Loading model...")
@@ -55,12 +54,10 @@ if file is not None:
     img = Image.open(file)
     st.image(img, caption="Uploaded ECG")
 
-    # Preprocessing
     img = img.resize((128,128))
     img_array = np.array(img) / 255.0
     img_array = img_array.reshape(1,128,128,3)
 
-    # Prediction
     pred = model.predict(img_array)
     cls = np.argmax(pred)
     conf = np.max(pred)
