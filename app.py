@@ -5,29 +5,33 @@ from PIL import Image
 import gdown
 import os
 
-# =========================
-# 🔹 MODEL CONFIG
-# =========================
 MODEL_URL = "https://drive.google.com/uc?id=1Bp7dfpa6qG6HZPuB96hGG60ZMAxO0R7K"
 MODEL_PATH = "ecg_model.keras"
 
-# =========================
-# 🔹 LOAD MODEL (CACHED)
-# =========================
 @st.cache_resource
 def load_model():
     if not os.path.exists(MODEL_PATH):
-        st.write("Downloading model... please wait ⏳")
-        gdown.download(MODEL_URL, MODEL_PATH, quiet=False)
+        st.write("⬇️ Downloading model...")
 
-    model = tf.keras.models.load_model(MODEL_PATH)
-    return model
+        try:
+            gdown.download(MODEL_URL, MODEL_PATH, quiet=False)
+        except Exception as e:
+            st.error("❌ Model download failed")
+            st.stop()
+
+    # Debug check
+    size = os.path.getsize(MODEL_PATH)
+    st.write(f"Model size: {size/1024/1024:.2f} MB")
+
+    if size < 5 * 1024 * 1024:   # <5MB means wrong file
+        st.error("❌ Model file corrupted or not downloaded correctly")
+        st.stop()
+
+    st.write("✅ Loading model...")
+    return tf.keras.models.load_model(MODEL_PATH)
 
 model = load_model()
 
-# =========================
-# 🔹 CLASS LABELS
-# =========================
 class_names = [
     "Abnormal Heartbeat",
     "COVID-19",
@@ -36,30 +40,21 @@ class_names = [
     "Normal"
 ]
 
-# =========================
-# 🔹 UI
-# =========================
 st.title("ECG Image Classification")
 
-uploaded_file = st.file_uploader("Upload ECG Image", type=["jpg", "png", "jpeg"])
+file = st.file_uploader("Upload ECG Image", type=["jpg","png","jpeg"])
 
-if uploaded_file is not None:
-    img = Image.open(uploaded_file)
-    st.image(img, caption="Uploaded ECG", use_column_width=True)
+if file is not None:
+    img = Image.open(file)
+    st.image(img, caption="Uploaded ECG")
 
-    # =========================
-    # 🔹 PREPROCESSING
-    # =========================
-    img = img.resize((128, 128))
+    img = img.resize((128,128))
     img_array = np.array(img) / 255.0
-    img_array = img_array.reshape(1, 128, 128, 3)
+    img_array = img_array.reshape(1,128,128,3)
 
-    # =========================
-    # 🔹 PREDICTION
-    # =========================
-    prediction = model.predict(img_array)
-    predicted_class = np.argmax(prediction)
-    confidence = np.max(prediction)
+    pred = model.predict(img_array)
+    cls = np.argmax(pred)
+    conf = np.max(pred)
 
-    st.success(f"Prediction: {class_names[predicted_class]}")
-    st.write(f"Confidence: {confidence:.2f}")
+    st.success(f"Prediction: {class_names[cls]}")
+    st.write(f"Confidence: {conf:.2f}")
